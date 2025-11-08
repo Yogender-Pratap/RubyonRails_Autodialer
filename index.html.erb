@@ -1,0 +1,76 @@
+<h2>Dashboard</h2>
+
+<p>Total: <%= @stats[:total] %> | Pending: <%= @stats[:pending] %> | Completed: <%= @stats[:completed] %> | Failed: <%= @stats[:failed] %></p>
+
+<hr>
+
+<h3>AI Command</h3>
+<input type="text" id="ai-command" placeholder="Type: call +15005550006">
+<button onclick="executeAICommand()">Execute</button>
+<div id="ai-response"></div>
+
+<script>
+function executeAICommand() {
+  const command = document.getElementById('ai-command').value;
+  fetch('/calls/ai_command', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ command: command })
+  })
+  .then(response => response.json())
+  .then(data => {
+    document.getElementById('ai-response').innerHTML = data.message;
+    if (data.success) setTimeout(() => location.reload(), 2000);
+  });
+}
+</script>
+
+<hr>
+
+<h3>Bulk Import</h3>
+<%= form_with url: bulk_import_contacts_path, method: :post do %>
+  <p>Paste numbers:</p>
+  <textarea name="text_numbers" rows="5" cols="50"></textarea>
+  <br>
+  <p>Or upload CSV:</p>
+  <%= file_field_tag :csv_file %>
+  <br>
+  <%= submit_tag 'Import' %>
+<% end %>
+
+<hr>
+
+<h3>Bulk Call</h3>
+<%= form_with url: bulk_call_calls_path, method: :post do %>
+  Message: <%= text_field_tag :message, 'Test call' %>
+  Delay: <%= number_field_tag :delay, 2 %>
+  <%= submit_tag 'Call All Pending' %>
+<% end %>
+
+<%= button_to "Clear All", clear_all_contacts_path, method: :delete, data: { confirm: 'Sure?' } %>
+
+<hr>
+
+<h3>Contacts</h3>
+<table border="1">
+  <tr>
+    <th>Phone</th>
+    <th>Name</th>
+    <th>Status</th>
+    <th>Actions</th>
+  </tr>
+  <% @contacts.each do |contact| %>
+    <tr>
+      <td><%= contact.phone_number %></td>
+      <td><%= contact.name %></td>
+      <td><%= contact.status %></td>
+      <td>
+        <%= button_to "Call", calls_path(contact_id: contact.id), method: :post %>
+        <%= button_to "Delete", contact_path(contact), method: :delete %>
+      </td>
+    </tr>
+  <% end %>
+</table>
